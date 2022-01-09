@@ -1,0 +1,28 @@
+library("tidyverse")
+
+library("GenomicRanges")
+
+##################################
+## Extract Ranges From Variants ##
+##################################
+
+## Load Variants
+## ----------
+
+variants <- read.delim("338.10.16.fwd.var.csv", header = TRUE, sep = ",", stringsAsFactors = FALSE) 
+
+# .csv file is read in as a data table. Convert the data table to a tibble.
+	
+  as_tibble %>%
+
+# Make a new column with the percentage variants.
+	
+  mutate(percentage_variants = X.variant_reads / coverage)
+
+## Save Variants to Files
+
+## ----------
+var1 <- dplyr::slice(variants, 1:1000000)
+var2 <- dplyr::slice(variants, 1000001:nrow(variants))
+write.table(var1, "variants_1.tsv", sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+write.table(var2, "variants_2.tsv", sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
