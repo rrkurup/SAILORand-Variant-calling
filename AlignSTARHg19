@@ -1,0 +1,107 @@
+#!/bin/bash
+#in Carbonate
+
+#unzip all your  fastq.gz files
+
+gunzip -d *.gz
+
+# Remember to activate your environment.
+
+source activate rnaseq
+
+# Unload system perl for compatability with entrez-direct.
+
+module unload perl
+
+
+
+################################
+## Generate STAR Genome Index ##
+################################
+
+# Make a directory to store the genome files within your working directory.
+mkdir hg19
+cd hg19
+# Download and unpack the genome assembly.
+
+#Download GRCh37.primary_assembly.genome.fa.gz and gencode.v28lift37.annotation.gtf from gencode and copy into hg19 folder using command prompt "scp" 
+gunzip *.gz
+
+# Create a directory to store the index.
+
+mkdir index
+
+# Create the STAR genome index.
+# --genomeSAindexNbases 12 was recommended by software.
+
+STAR \
+  --runThreadN 8 \
+  --runMode genomeGenerate \
+  --genomeDir index \
+  --genomeFastaFiles GRCh37.primary_assembly.genome.fa \
+  --sjdbGTFfile gencode.v28lift37.annotation.gtf \
+  --genomeSAindexNbases 12
+  
+  ###########################
+## Align Reads to Genome ##
+###########################
+
+# Create an output directory for aligned reads.
+
+mkdir -p Results/aligned
+
+# Align the reads.
+
+FASTQ=$PolyA*
+
+for FASTQ in ${FASTQ[@]}; do
+  PREFIX=Results/aligned/$(basename $FASTQ .fastq)_
+  STAR \
+    --runThreadN 8 \
+    --outFilterMultimapNmax 1 \
+    --outFilterScoreMinOverLread .66 \
+    --outFilterMismatchNmax 10 \
+    --outFilterMismatchNoverLmax .3 \
+    --runMode alignReads \
+    --genomeDir genome/index \
+    --readFilesIn $FASTQ \
+    --outFileNamePrefix $PREFIX \
+    --outSAMattributes All \
+    --outSAMtype BAM SortedByCoordinate
+done
+
+# Indexing the BAM files.
+
+BAMS=($(find ./Results/aligned -name "*\.bam"))
+
+for BAM in ${BAMS[@]}; do
+  samtools index $BAM
+  done
+  
+  ####################
+## Count Features ##
+####################
+
+# Create an output directory for read counts.
+
+mkdir -p Results/counts
+
+# Count reads.
+
+BAMS=$(find ./Results/aligned -name "*\.bam")
+
+featureCounts \
+  -a genome/annotation.gtf \
+  -o Results/counts/counts.tsv \
+  -t gene \
+  -g gene_id \
+  --largestOverlap \
+  --readExtension3 150 \
+  --primary \
+  -s 2 \
+  -T 8 \
+  ${BAMS}
+  
+  #copy files to local desktop in windows open command prompt
+  scp rrkurup@carbonate.uits.iu.edu:/N/slate/rrkurup/PolyA/Results/counts/counts.tsv.summary .
+  scp rrkurup@carbonate.uits.iu.edu:/N/slate/rrkurup/PolyA/Results/counts/counts.tsv .
