@@ -48,60 +48,39 @@ STAR \
 
 # Create an output directory for aligned reads.
 
-mkdir -p Results/aligned
+mkdir staralign
 
 # Align the reads.
+#To submit a job 
+#!/bin/bash
 
-FASTQ=$PolyA*
+#SBATCH -J 338.11.14.merged.aligned
+#SBATCH -p general
+#SBATCH -o 338.11.14.aligned_%j.txt
+#SBATCH -e 338.11.14.aligned_%j.err
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=rrkurup@iu.edu
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=16
+#SBATCH --cpus-per-task=1
+#SBATCH --time=24:00:00
+module unload gcc
+module load gcc/4.9.2
+module load star
 
-for FASTQ in ${FASTQ[@]}; do
-  PREFIX=Results/aligned/$(basename $FASTQ .fastq)_
-  STAR \
-    --runThreadN 8 \
-    --outFilterMultimapNmax 1 \
-    --outFilterScoreMinOverLread .66 \
-    --outFilterMismatchNmax 10 \
-    --outFilterMismatchNoverLmax .3 \
-    --runMode alignReads \
-    --genomeDir genome/index \
-    --readFilesIn $FASTQ \
-    --outFileNamePrefix $PREFIX \
-    --outSAMattributes All \
-    --outSAMtype BAM SortedByCoordinate
-done
+STAR --runThreadN 8 --outFilterMultimapNmax 1 --outFilterScoreMinOverLread .66 --outFilterMatchNminOverLread .66 \
+--outFilterMismatchNmax 10 --outFilterMismatchNoverLmax .3  --runMode alignReads --genomeDir /N/slate/rrkurup/hg19/index \
+--clip3pAdapterSeq CCGTCCCG --outFileNamePrefix /N/slate/rrkurup/hg19/staralign/338.11.14.star. --outSAMattributes all \
+--outSAMtype BAM SortedByCoordinate --readFilesIn /N/slate/rrkurup/hg19/338-11-14_S2_R1_001.fastq /N/slate/rrkurup/hg19/338-11-14_S2_R2_001.fastq
+
+
 
 # Indexing the BAM files.
 
-BAMS=($(find ./Results/aligned -name "*\.bam"))
+BAMS=($(find /N/slate/rrkurup/hg19/staralign -name "*\.bam"))
 
 for BAM in ${BAMS[@]}; do
   samtools index $BAM
   done
   
-  ####################
-## Count Features ##
-####################
-
-# Create an output directory for read counts.
-
-mkdir -p Results/counts
-
-# Count reads.
-
-BAMS=$(find ./Results/aligned -name "*\.bam")
-
-featureCounts \
-  -a genome/annotation.gtf \
-  -o Results/counts/counts.tsv \
-  -t gene \
-  -g gene_id \
-  --largestOverlap \
-  --readExtension3 150 \
-  --primary \
-  -s 2 \
-  -T 8 \
-  ${BAMS}
-  
-  #copy files to local desktop in windows open command prompt
-  scp rrkurup@carbonate.uits.iu.edu:/N/slate/rrkurup/PolyA/Results/counts/counts.tsv.summary .
-  scp rrkurup@carbonate.uits.iu.edu:/N/slate/rrkurup/PolyA/Results/counts/counts.tsv .
+ 
