@@ -2,6 +2,7 @@
 
 cd /N/slate/rrkurup/PolyA
 
+
 #unzip all your  fastq.gz files
 
 gunzip -d *.gz
