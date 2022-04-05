@@ -1,0 +1,35 @@
+
+cd /N/slate/rrkurup/hg19/
+#Create folder
+mkdir Variantcall
+#copy genome file, snp file and aligned bam 
+#Load samtools with 
+module load samtools
+#Remove the duplicates with
+samtools rmdup 338.11.14.bam inputfile.nodup.bam
+#Call the variants and clean up the output file with (one line), this will take a while to run, will likely need to submit as a job to Carbonate
+#command from notes samtools mpileup -u -I -t DP4 -v -f c_elegans.PRJNA13758.WS269.genomic.fa  inputfile.nodup.bam | awk '$5 != "<*>"' | tail -n +30 > inputfile.rmdup.mpileup.vcf
+# Job script sample
+!/bin/bash
+
+#SBATCH -J 338.11.14.rev.var
+#SBATCH -p general
+#SBATCH -o 338.11.14.rev_%j.txt
+#SBATCH -e 338.14._rev%j.err
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=rrkurup@iu.edu
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=16
+#SBATCH --cpus-per-task=1
+#SBATCH --time=12:00:00
+
+module load samtools
+cd N/slate/rrkurup/hg19/Variant
+samtools mpileup -u -I -t DP5 -v -f GRCh37.primary_assembly.genome.fa 338.11.rev.nodup.bam  | awk '$5 != "<*>"' | tail -n +30 > 338.14.rev.var.mpileup.vcf
+
+#cpus-per-task and time need to be adjusted depending on size of file
+#After you get the samtools output file, you need to remove the first 78 lines of the file; this can be done using the following command:
+tail -n +78 338.10.16.fwd.rmdup.mpileup.vcf > 338.10.16.fwd.rmdup.mpileup.noHead.vcf
+# To convert vcf to excel format. 
+python3 varianthuman.py --v 338.11.14.rev.rmdup.mpileup.noHead.vcf --snp u87.snp.bed --o 338.11.14.rev.var.csv
+ #CSV files are big so split into multiple excel sheets using R
