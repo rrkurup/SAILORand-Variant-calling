@@ -1,32 +1,22 @@
 #!/bin/bash
-
+mkdir Sailor
 # in genome directory
 # copy genome file
 
-cp assembly.fasta /N/u/rrkurup/Carbonate
+cp GRCh37.primary_assembly.genome.fa /N/slate/rrkurup/hg19/Sailor
+cp u87.snp.bed /N/slate/rrkurup/hg19/Sailor
 
-# In PolyA directory
-
-mkdir Sailor
 
 # In aligned directory
-# create merged bam file
+# copy bam file
 
+cp *.Aligned/sortedByCoord.out.bam /N/slate/rrkurup/hg19/Sailor 
+cd /N/slate/rrkurup/hg19/Sailor 
 module load samtools
-
-samtools merge -@ 8 ../../sailor/GSF2848-EE-N2.merged.bam GSF2848-EE-N2-rep1_S11_R1_001_Aligned.sortedByCoord.out.bam GSF2848-EE-N2-rep2_S12_R1_001_Aligned.sortedByCoord.out.bam GSF2848-EE-N2-rep3_S13_R1_001_Aligned.sortedByCoord.out.bam
-
-samtools merge -@ 8 ../../sailor/GSF2848-EE-adr-2.merged.bam GSF2848-EE-adr-2-rep1_S14_R1_001.Aligned/sortedByCoord.out.bam GSF2848-EE-adr-2-rep2_S15_R1_001.Aligned/sortedByCoord.out.bam GSF2848-EE-adr-2-rep3_S16_R1_001.Aligned/sortedByCoord.out.bam
-
-# in Carbonate (not in a directory)
-
-cp /N/slate/emierdma/GSF2848/sailor/* .
-
+samtools merge -@ 8 412-11-14.merged.sorted.rmdup.readfiltered.bam PolyA_412-11-14.merged.fwd.sorted.rmdup.readfiltered.bam PolyA_412-11-14.merged.rev.sorted.rmdup.readfiltered.bam
 # in Desktop
 
-scp c.elegans.WS275.snps.sorted.bed emierdma@carbonate.uits.iu.edu:
-
-scp sailor-1.0.4 emierdma@carbonate.uits.iu.edu:
+scp sailor-1.0.4 rrkurup@carbonate.uits.iu.edu:
 
 # in Carbonate
 # should have bam files, snps.sorted.bed file, assembly.fasta file
@@ -52,10 +42,33 @@ Esc :wq
 
 # rename .yaml file
 
-mv ce11_example.yaml N2.yaml
+mv ce11_example.yaml 412-11-14.merged.yaml
 
 # run sailor
+#For small data
+./sailor-1.0.4 name.yaml
+#To submit job make a script file 412-11-14.merged.script with following commands
+#!/bin/bash
 
-./sailor-1.0.4 N2.yaml
+#SBATCH -J 412.11.14.merged
+#SBATCH -p general
+#SBATCH -o 412.11.14.merged_%j.txt
+#SBATCH -e 412.11.14.merged_%j.err
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=rrkurup@iu.edu
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=16
+#SBATCH --cpus-per-task=1
+#SBATCH --time=12:00:00
+
+module load singularity
+
+cd /N/slate/rrkurup/hg19/Sailor
+
+srun -n 16 ./sailor-1.0.4 412-11-14.merged.yaml
+
+To submit job sbatch 412-11-14.merged.script
+
 
 #proceed to SAILOR annotation
+
